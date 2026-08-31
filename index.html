@@ -3,93 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор и Конкурсы</title>
+    <title>Управление Сменой & Калькулятор</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 15px; background: #f2f2f7; color: #000; margin: 0; }
-        .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        h2, h3 { margin-top: 0; }
-        label { display: block; margin: 8px 0 4px; font-weight: 600; font-size: 14px; }
-        input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
-        button { background: #007aff; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-sec { background: #e5e5ea; color: #000; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        .btn-group button { flex: 1; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .badge-go { background: #ff9500; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .section-header { font-weight: bold; background: #f2f2f7; padding: 6px 10px; margin-top: 10px; border-radius: 6px; }
-        .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 8px; border-radius: 8px; }
-        .checkbox-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-        .checkbox-item input { width: auto; margin: 0; }
+        :root {
+            --bg-color: #f4f5f9;
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --text-main: #1c1c1e;
+            --text-sub: #8e8e93;
+            --border-color: #e5e5ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 12px;
+            padding-bottom: 40px;
+        }
+
+        .header {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin: 0 0 12px 0;
+        }
+
+        .user-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: #fafafa;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .card h2 {
+            font-size: 17px;
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Игра Дня */
+        .game-target-box {
+            background: #f0f8ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .game-target-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--primary);
+        }
+
+        .game-progress-bar {
+            height: 8px;
+            background: #e5e5ea;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .game-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Поиск и выбор меню */
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-box input {
+            padding-left: 38px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-sub);
+            font-size: 16px;
+        }
+
+        .filter-tags {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #e5e5ea;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+
+        .tag.active {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .menu-list {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .item-sub {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        .badge-go { background: var(--warning); color: #fff; }
+        .badge-game { background: var(--primary); color: #fff; }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-qty {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: #e5e5ea;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-qty:active {
+            background: #d1d1d6;
+        }
+
+        .qty-val {
+            font-size: 15px;
+            font-weight: 600;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Выбранные позиции */
+        .selected-summary {
+            background: #f9f9fb;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-main:active { opacity: 0.8; }
+
+        /* Таблица результатов */
+        .result-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+        }
+
+        .res-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .res-row.total {
+            font-weight: 700;
+            font-size: 16px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 6px;
+            margin-top: 6px;
+        }
+
+        /* Статистика смены */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        /* Табы и админка */
+        .admin-toggle {
+            font-size: 12px;
+            color: var(--text-sub);
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .admin-panel {
+            display: none;
+            background: #fff;
+            border: 2px dashed var(--warning);
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <label>Ваше имя:</label>
-        <input type="text" id="waiterName" placeholder="Введите имя" onchange="saveName()">
+    <!-- Шапка и профиль официанта -->
+    <div class="header">
+        <h1>📱 Калькулятор Смены</h1>
+        <div class="user-input-group">
+            <input type="text" id="waiterName" placeholder="Введите имя официанта..." onchange="saveWaiterName()">
+        </div>
     </div>
 
-    <div class="card" id="dailyGameCard">
-        <h2>🎯 Игра Дня</h2>
-        <div id="dailyGameContent">Загрузка условий...</div>
+    <!-- Блок Игры Дня -->
+    <div class="card">
+        <h2>🎯 Конкурс «Игра Дня»</h2>
+        <div id="gameContent">
+            <div style="color: var(--text-sub); font-size: 13px;">Загрузка условий...</div>
+        </div>
     </div>
 
+    <!-- Основной калькулятор стола -->
     <div class="card">
-        <h2>Расчет стола</h2>
-        <label>Сумма чека (₽)</label>
-        <input type="number" id="checkSum" placeholder="Например, 5000">
-
-        <label>Количество гостей</label>
-        <input type="number" id="guestCount" value="1" min="1">
-
-        <label>Позиции стола</label>
-        <div id="menuSelection">Загрузка меню из Google Таблицы...</div>
-
-        <button onclick="calculateTable()">Рассчитать стол</button>
-        <div id="tableResult"></div>
-    </div>
-
-    <div class="card">
-        <h2>⚙️ Панель Управляющего: Создать Игру Дня</h2>
+        <h2>🧮 Расчет стола</h2>
         
-        <label>1. Выберите главную категорию:</label>
-        <div class="btn-group">
-            <button class="btn-sec" id="btnFood" onclick="selectGameCategory('food')">Блюда</button>
-            <button class="btn-sec" id="btnDrink" onclick="selectGameCategory('drink')">Напитки</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <div style="flex: 2;">
+                <label style="font-size:12px; color:var(--text-sub);">Сумма чека (₽)</label>
+                <input type="number" id="checkSum" placeholder="5000">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size:12px; color:var(--text-sub);">Гостей</label>
+                <input type="number" id="guestCount" value="1" min="1">
+            </div>
         </div>
 
-        <div id="categoryConfig" style="display:none;">
-            <label>2. Выберите разделы галочками:</label>
-            <div id="sectionsCheckboxes" class="checkbox-list"></div>
-
-            <label style="margin-top:15px;">3. Исключить конкретные позиции (опционально):</label>
-            <div id="itemsExcludeCheckboxes" class="checkbox-list"></div>
-
-            <label style="margin-top:15px;">4. Укажите цель (продать штук):</label>
-            <input type="number" id="gameTarget" placeholder="Например, 15">
-
-            <button onclick="saveDailyGame()" style="background:#34c759;">Запустить игру дня</button>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Выберите позиции из чека:</label>
+        
+        <!-- Поиск и Фильтры -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Поиск блюда или напитка..." oninput="filterMenu()">
         </div>
+
+        <div class="filter-tags" id="sectionTags">
+            <div class="tag active" onclick="setFilter('all', this)">Все</div>
+            <div class="tag" onclick="setFilter('food', this)">Блюда</div>
+            <div class="tag" onclick="setFilter('drink', this)">Напитки</div>
+            <div class="tag" onclick="setFilter('go', this)">🔥 Go-List</div>
+        </div>
+
+        <!-- Список элементов -->
+        <div class="menu-list" id="menuList">
+            <div style="padding:15px; text-align:center; color:var(--text-sub);">Загрузка меню из Google Таблицы...</div>
+        </div>
+
+        <!-- Подытог выбранных блюд -->
+        <div class="selected-summary" id="selectedSummary">
+            Выбрано позиций: <b>0</b>
+        </div>
+
+        <button class="btn-main" onclick="calculateAndSaveTable()">Рассчитать и сохранить стол</button>
+
+        <div id="calcResult"></div>
+    </div>
+
+    <!-- Фиксация и Статистика за Смену -->
+    <div class="card">
+        <h2>📊 Фиксация Смены <span style="font-size:12px; font-weight:normal; color:var(--text-sub);" id="shiftDate"></span></h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val" id="stCheckSum">0 ₽</div>
+                <div class="stat-lbl">Общий товарооборот</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stEarning">0 ₽</div>
+                <div class="stat-lbl">Личный заработок</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stTables">0</div>
+                <div class="stat-lbl">Рассчитано столов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stFormulaMet">0 / 0</div>
+                <div class="stat-lbl">Столы с 2%</div>
+            </div>
+        </div>
+        <button class="btn-main" style="background:var(--text-sub); margin-top:10px; padding:8px; font-size:12px;" onclick="resetShift()">Сбросить смену</button>
+    </div>
+
+    <!-- Управление Игрой Дня (Администратор) -->
+    <div class="admin-toggle" onclick="toggleAdminPanel()">⚙️ Панель управляющего (Настройка Игры Дня)</div>
+
+    <div class="admin-panel" id="adminPanel">
+        <h3 style="margin-top:0;">Создание Игры Дня (Блюдо + Напиток)</h3>
+        
+        <label style="font-size:12px; font-weight:bold;">1. Позиция БЛЮДО:</label>
+        <select id="admFoodItem" style="margin-bottom:8px;"></select>
+        <input type="number" id="admFoodTarget" placeholder="Цель продаж (шт.)" style="margin-bottom:12px;">
+
+        <label style="font-size:12px; font-weight:bold;">2. Позиция НАПИТОК:</label>
+        <select id="admDrinkItem" style="margin-bottom:8px;"></select>
+        <input type="number" id="admDrinkTarget" placeholder="Цель продаж (шт.)" style="margin-bottom:12px;">
+
+        <button class="btn-main" style="background:var(--success);" onclick="saveAdminGame()">Запустить Конкурс на Сегодня</button>
     </div>
 
 <script>
     const SHEET_ID = '113BWLabBaaDO9WfTmkfhLyjAmtL8XBnZQyIZ_Dkb1F0';
-    // Прямой CSV экспорт Google Таблицы
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
-    let menu = [];
-    let selectedGameCategory = null;
+    let rawMenu = [];
+    let selectedQuantities = {}; // id -> qty
+    let currentFilter = 'all';
 
-    // Функция разбора CSV формата
+    // Разбор CSV
     function parseCSV(text) {
         const lines = text.split('\n').filter(line => line.trim() !== '');
         if (lines.length < 2) return [];
-
         const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
         
-        return lines.slice(1).map(line => {
+        return lines.slice(1).map((line, index) => {
             const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
-            let obj = {};
+            let obj = { id: index };
             headers.forEach((header, i) => {
                 obj[header] = values[i] || '';
             });
@@ -97,194 +448,274 @@
         });
     }
 
-    async function loadMenu() {
+    async function initApp() {
+        document.getElementById('shiftDate').innerText = new Date().toLocaleDateString('ru-RU');
+        document.getElementById('waiterName').value = localStorage.getItem('waiterName') || '';
+
         try {
-            const response = await fetch(CSV_URL);
-            const text = await response.text();
+            const res = await fetch(CSV_URL);
+            const text = await res.text();
             const data = parseCSV(text);
 
-            menu = data.map(row => ({
-                name: row.name || 'Без названия',
-                category: (row.category || 'food').toLowerCase().trim(),
-                section: row.section || 'Прочее',
-                coeff: parseFloat(String(row.coeff || 1).replace(',', '.')) || 1.0,
-                is_go: String(row.is_go).toUpperCase() === 'TRUE'
+            rawMenu = data.map(item => ({
+                id: item.id,
+                name: item.name || 'Без названия',
+                category: (item.category || 'food').toLowerCase().trim(),
+                section: item.section || 'Разное',
+                coeff: parseFloat(String(item.coeff || 1).replace(',', '.')) || 1.0,
+                is_go: String(item.is_go).toUpperCase() === 'TRUE'
             }));
 
+            populateAdminSelects();
             renderMenu();
-            renderDailyGameInfo();
+            renderDailyGame();
+            updateShiftStats();
         } catch (e) {
-            console.error('Ошибка:', e);
-            document.getElementById('menuSelection').innerText = 'Ошибка загрузки данных. Проверьте права доступа таблицы.';
+            console.error(e);
+            document.getElementById('menuList').innerHTML = `<div style="padding:15px; color:red;">Ошибка загрузки Google Таблицы. Проверьте доступ.</div>`;
         }
     }
 
     function renderMenu() {
-        const container = document.getElementById('menuSelection');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const container = document.getElementById('menuList');
         container.innerHTML = '';
 
-        const sections = {};
-        menu.forEach(item => {
-            if (!sections[item.section]) sections[item.section] = [];
-            sections[item.section].push(item);
+        const gameConfig = JSON.parse(localStorage.getItem('dailyGameConfig') || '{}');
+
+        const filtered = rawMenu.filter(item => {
+            const matchSearch = item.name.toLowerCase().includes(search) || item.section.toLowerCase().includes(search);
+            let matchFilter = true;
+            if (currentFilter === 'food') matchFilter = item.category === 'food';
+            if (currentFilter === 'drink') matchFilter = item.category === 'drink';
+            if (currentFilter === 'go') matchFilter = item.is_go;
+            return matchSearch && matchFilter;
         });
 
-        let itemIndex = 0;
-        for (const sec in sections) {
-            container.innerHTML += `<div class="section-header">${sec}</div>`;
-            sections[sec].forEach(item => {
-                container.innerHTML += `
-                    <div class="item-row">
-                        <div>
-                            ${item.name} ${item.is_go ? '<span class="badge-go">GO</span>' : ''}
-                            <br><small style="color:#666">Коэф: ${item.coeff}</small>
-                        </div>
-                        <input type="number" min="0" value="0" id="item_qty_${itemIndex}" style="width:60px; margin:0;">
-                    </div>
-                `;
-                itemIndex++;
-            });
-        }
-    }
-
-    function selectGameCategory(cat) {
-        selectedGameCategory = cat;
-        document.getElementById('btnFood').style.background = cat === 'food' ? '#007aff' : '#e5e5ea';
-        document.getElementById('btnFood').style.color = cat === 'food' ? '#fff' : '#000';
-        document.getElementById('btnDrink').style.background = cat === 'drink' ? '#007aff' : '#e5e5ea';
-        document.getElementById('btnDrink').style.color = cat === 'drink' ? '#fff' : '#000';
-
-        document.getElementById('categoryConfig').style.display = 'block';
-
-        const availableSections = [...new Set(menu.filter(i => i.category === cat).map(i => i.section))];
-        const secContainer = document.getElementById('sectionsCheckboxes');
-        secContainer.innerHTML = '';
-
-        availableSections.forEach(sec => {
-            secContainer.innerHTML += `
-                <div class="checkbox-item">
-                    <label>${sec}</label>
-                    <input type="checkbox" value="${sec}" onchange="updateExcludeList()">
-                </div>
-            `;
-        });
-
-        updateExcludeList();
-    }
-
-    function updateExcludeList() {
-        const checkedSections = Array.from(document.querySelectorAll('#sectionsCheckboxes input:checked')).map(cb => cb.value);
-        const excludeContainer = document.getElementById('itemsExcludeCheckboxes');
-        excludeContainer.innerHTML = '';
-
-        const itemsToExclude = menu.filter(i => checkedSections.includes(i.section));
-        itemsToExclude.forEach(item => {
-            excludeContainer.innerHTML += `
-                <div class="checkbox-item">
-                    <label>${item.name} (${item.section})</label>
-                    <input type="checkbox" class="exclude-cb" value="${item.name}">
-                </div>
-            `;
-        });
-    }
-
-    function saveDailyGame() {
-        const checkedSections = Array.from(document.querySelectorAll('#sectionsCheckboxes input:checked')).map(cb => cb.value);
-        const excludedItems = Array.from(document.querySelectorAll('.exclude-cb:checked')).map(cb => cb.value);
-        const target = parseInt(document.getElementById('gameTarget').value);
-
-        if (checkedSections.length === 0 || isNaN(target)) {
-            return alert('Выберите хотя бы один раздел и укажите цель!');
-        }
-
-        const gameConfig = {
-            category: selectedGameCategory,
-            sections: checkedSections,
-            excludedItems: excludedItems,
-            target: target
-        };
-
-        localStorage.setItem('dailyGameConfig', JSON.stringify(gameConfig));
-        alert('Игра дня запущена!');
-        renderDailyGameInfo();
-    }
-
-    function renderDailyGameInfo() {
-        const config = JSON.parse(localStorage.getItem('dailyGameConfig'));
-        const container = document.getElementById('dailyGameContent');
-
-        if (!config) {
-            container.innerHTML = '<p style="color:#666;">Игра дня еще не настроена.</p>';
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-sub);">Ничего не найдено</div>`;
             return;
         }
 
-        const myProgress = localStorage.getItem('myDailyGameProgress') || 0;
+        filtered.forEach(item => {
+            const qty = selectedQuantities[item.id] || 0;
+            const isGameItem = (gameConfig.foodItem === item.name) || (gameConfig.drinkItem === item.name);
 
-        container.innerHTML = `
-            <p><b>Категория:</b> ${config.category === 'food' ? 'Блюда' : 'Напитки'}</p>
-            <p><b>Разделы:</b> ${config.sections.join(', ')}</p>
-            ${config.excludedItems.length > 0 ? `<p style="font-size:12px; color:#d9534f;"><b>Исключены:</b> ${config.excludedItems.join(', ')}</p>` : ''}
-            <p><b>Цель дня:</b> Продать ${config.target} шт.</p>
-            <p><b>Ваш прогресс:</b> <b style="font-size:18px; color:#007aff;">${myProgress} / ${config.target} шт.</b> ${myProgress >= config.target ? '✅' : ''}</p>
-        `;
+            container.innerHTML += `
+                <div class="menu-item">
+                    <div class="item-info">
+                        <div class="item-name">
+                            ${item.name}
+                            ${item.is_go ? '<span class="badge badge-go">GO</span>' : ''}
+                            ${isGameItem ? '<span class="badge badge-game">ИГРА</span>' : ''}
+                        </div>
+                        <div class="item-sub">${item.section} • Коэф: ${item.coeff}</div>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span class="qty-val">${qty}</span>
+                        <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                    </div>
+                </div>
+            `;
+        });
     }
 
-    function calculateTable() {
+    function changeQty(id, delta) {
+        const current = selectedQuantities[id] || 0;
+        const updated = Math.max(0, current + delta);
+        if (updated === 0) delete selectedQuantities[id];
+        else selectedQuantities[id] = updated;
+
+        renderMenu();
+        updateSummary();
+    }
+
+    function updateSummary() {
+        let count = 0;
+        for (let id in selectedQuantities) count += selectedQuantities[id];
+        document.getElementById('selectedSummary').innerHTML = `Выбрано позиций: <b>${count}</b>`;
+    }
+
+    function setFilter(filter, el) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-tags .tag').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        renderMenu();
+    }
+
+    function filterMenu() {
+        renderMenu();
+    }
+
+    // Расчет стола и фиксация
+    function calculateAndSaveTable() {
         const checkSum = parseFloat(document.getElementById('checkSum').value);
         const guests = parseInt(document.getElementById('guestCount').value);
 
-        if (isNaN(checkSum) || isNaN(guests) || guests <= 0) return alert('Введите корректные данные');
+        if (isNaN(checkSum) || checkSum <= 0 || isNaN(guests) || guests <= 0) {
+            return alert('Введите корректную сумму чека и количество гостей');
+        }
 
         let foodCoeffSum = 0;
         let drinkCoeffSum = 0;
-        let gameItemsSoldThisTable = 0;
 
-        const config = JSON.parse(localStorage.getItem('dailyGameConfig'));
+        let foodGameSold = 0;
+        let drinkGameSold = 0;
 
-        let itemIndex = 0;
-        menu.forEach(item => {
-            const input = document.getElementById(`item_qty_${itemIndex}`);
-            itemIndex++;
-            if (!input) return;
-            const qty = parseInt(input.value) || 0;
+        const gameConfig = JSON.parse(localStorage.getItem('dailyGameConfig') || '{}');
 
-            if (qty > 0) {
-                if (item.category === 'food') foodCoeffSum += item.coeff * qty;
-                if (item.category === 'drink') drinkCoeffSum += item.coeff * qty;
+        for (let id in selectedQuantities) {
+            const qty = selectedQuantities[id];
+            const item = rawMenu.find(m => m.id == id);
+            if (!item) continue;
 
-                if (config && config.sections.includes(item.section) && !config.excludedItems.includes(item.name)) {
-                    gameItemsSoldThisTable += qty;
-                }
-            }
-        });
+            if (item.category === 'food') foodCoeffSum += item.coeff * qty;
+            if (item.category === 'drink') drinkCoeffSum += item.coeff * qty;
+
+            if (gameConfig.foodItem && item.name === gameConfig.foodItem) foodGameSold += qty;
+            if (gameConfig.drinkItem && item.name === gameConfig.drinkItem) drinkGameSold += qty;
+        }
 
         const foodPerGuest = foodCoeffSum / guests;
         const drinkPerGuest = drinkCoeffSum / guests;
-        const isFormulaMet = (foodPerGuest >= 3.3) && (drinkPerGuest >= 2.4);
-        const earning = checkSum * (isFormulaMet ? 0.02 : 0.002);
+        const isMet = (foodPerGuest >= 3.3) && (drinkPerGuest >= 2.4);
+        const earning = checkSum * (isMet ? 0.02 : 0.002);
 
-        if (gameItemsSoldThisTable > 0) {
-            let currentProgress = parseInt(localStorage.getItem('myDailyGameProgress') || 0);
-            currentProgress += gameItemsSoldThisTable;
-            localStorage.setItem('myDailyGameProgress', currentProgress);
-            renderDailyGameInfo();
-        }
-
-        document.getElementById('tableResult').innerHTML = `
-            <hr>
-            <p><b>Блюда/гость:</b> ${foodPerGuest.toFixed(2)} / 3.3 ${foodPerGuest >= 3.3 ? '✅' : '❌'}</p>
-            <p><b>Напитки/гость:</b> ${drinkPerGuest.toFixed(2)} / 2.4 ${drinkPerGuest >= 2.4 ? '✅' : '❌'}</p>
-            <p><b>Формула:</b> ${isFormulaMet ? '<span style="color:green;font-weight:bold;">ВЫПОЛНЕНА (2%)</span>' : '<span style="color:red;font-weight:bold;">НЕ ВЫПОЛНЕНА (0.2%)</span>'}</p>
-            <p><b>Заработок со стола:</b> ${earning.toFixed(2)} ₽</p>
+        // Результат
+        document.getElementById('calcResult').innerHTML = `
+            <div class="result-box">
+                <div class="res-row"><span>Еда / Гость:</span> <b>${foodPerGuest.toFixed(2)} (цель 3.3) ${foodPerGuest>=3.3?'✅':'❌'}</b></div>
+                <div class="res-row"><span>Напитки / Гость:</span> <b>${drinkPerGuest.toFixed(2)} (цель 2.4) ${drinkPerGuest>=2.4?'✅':'❌'}</b></div>
+                <div class="res-row total"><span>Заработок со стола (${isMet?'2%':'0.2%'}):</span> <span>${earning.toFixed(2)} ₽</span></div>
+            </div>
         `;
+
+        // Фиксация в хранилище смены
+        let shift = JSON.parse(localStorage.getItem('shiftStats') || '{"checkSum":0,"earning":0,"tables":0,"formulaMet":0}');
+        shift.checkSum += checkSum;
+        shift.earning += earning;
+        shift.tables += 1;
+        if (isMet) shift.formulaMet += 1;
+        localStorage.setItem('shiftStats', JSON.stringify(shift));
+
+        // Фиксация прогресса игры дня
+        let gameProgress = JSON.parse(localStorage.getItem('gameProgress') || '{"food":0, "drink":0}');
+        gameProgress.food += foodGameSold;
+        gameProgress.drink += drinkGameSold;
+        localStorage.setItem('gameProgress', JSON.stringify(gameProgress));
+
+        // Очистка формы
+        selectedQuantities = {};
+        document.getElementById('checkSum').value = '';
+        document.getElementById('guestCount').value = '1';
+        updateSummary();
+        renderMenu();
+        updateShiftStats();
+        renderDailyGame();
     }
 
-    function saveName() {
+    function updateShiftStats() {
+        let shift = JSON.parse(localStorage.getItem('shiftStats') || '{"checkSum":0,"earning":0,"tables":0,"formulaMet":0}');
+        document.getElementById('stCheckSum').innerText = shift.checkSum.toFixed(0) + ' ₽';
+        document.getElementById('stEarning').innerText = shift.earning.toFixed(2) + ' ₽';
+        document.getElementById('stTables').innerText = shift.tables;
+        document.getElementById('stFormulaMet').innerText = `${shift.formulaMet} / ${shift.tables}`;
+    }
+
+    function resetShift() {
+        if (confirm('Сбросить статистику смены?')) {
+            localStorage.removeItem('shiftStats');
+            localStorage.removeItem('gameProgress');
+            updateShiftStats();
+            renderDailyGame();
+        }
+    }
+
+    // Игра дня
+    function renderDailyGame() {
+        const config = JSON.parse(localStorage.getItem('dailyGameConfig') || 'null');
+        const progress = JSON.parse(localStorage.getItem('gameProgress') || '{"food":0, "drink":0}');
+        const container = document.getElementById('gameContent');
+
+        if (!config || (!config.foodItem && !config.drinkItem)) {
+            container.innerHTML = `<div style="color:var(--text-sub); font-size:13px;">Управляющий еще не поставил задачи на сегодня.</div>`;
+            return;
+        }
+
+        let html = '';
+
+        if (config.foodItem) {
+            const p = progress.food || 0;
+            const t = config.foodTarget || 1;
+            const pct = Math.min(100, Math.round((p / t) * 100));
+            html += `
+                <div class="game-target-box">
+                    <div class="game-target-title">🍔 Блюдо: ${config.foodItem}</div>
+                    <div style="font-size:12px; margin-top:4px;">Прогресс: <b>${p} из ${t} шт.</b> (${pct}%)</div>
+                    <div class="game-progress-bar"><div class="game-progress-fill" style="width:${pct}%"></div></div>
+                </div>
+            `;
+        }
+
+        if (config.drinkItem) {
+            const p = progress.drink || 0;
+            const t = config.drinkTarget || 1;
+            const pct = Math.min(100, Math.round((p / t) * 100));
+            html += `
+                <div class="game-target-box" style="border-color: var(--success);">
+                    <div class="game-target-title" style="color: var(--success);">🍹 Напиток: ${config.drinkItem}</div>
+                    <div style="font-size:12px; margin-top:4px;">Прогресс: <b>${p} из ${t} шт.</b> (${pct}%)</div>
+                    <div class="game-progress-bar"><div class="game-progress-fill" style="width:${pct}%; background:var(--success);"></div></div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    // Панель админа
+    function populateAdminSelects() {
+        const foodSel = document.getElementById('admFoodItem');
+        const drinkSel = document.getElementById('admDrinkItem');
+
+        foodSel.innerHTML = '<option value="">-- Не выбрано --</option>';
+        drinkSel.innerHTML = '<option value="">-- Не выбрано --</option>';
+
+        rawMenu.filter(i => i.category === 'food').forEach(i => {
+            foodSel.innerHTML += `<option value="${i.name}">${i.name} (${i.section})</option>`;
+        });
+
+        rawMenu.filter(i => i.category === 'drink').forEach(i => {
+            drinkSel.innerHTML += `<option value="${i.name}">${i.name} (${i.section})</option>`;
+        });
+    }
+
+    function toggleAdminPanel() {
+        const p = document.getElementById('adminPanel');
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function saveAdminGame() {
+        const foodItem = document.getElementById('admFoodItem').value;
+        const foodTarget = parseInt(document.getElementById('admFoodTarget').value) || 0;
+
+        const drinkItem = document.getElementById('admDrinkItem').value;
+        const drinkTarget = parseInt(document.getElementById('admDrinkTarget').value) || 0;
+
+        const config = { foodItem, foodTarget, drinkItem, drinkTarget };
+        localStorage.setItem('dailyGameConfig', JSON.stringify(config));
+        
+        alert('Конкурс успешно обновлен!');
+        renderDailyGame();
+        toggleAdminPanel();
+    }
+
+    function saveWaiterName() {
         localStorage.setItem('waiterName', document.getElementById('waiterName').value);
     }
 
-    document.getElementById('waiterName').value = localStorage.getItem('waiterName') || '';
-    loadMenu();
+    initApp();
 </script>
 </body>
 </html>
