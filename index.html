@@ -26,12 +26,12 @@
 
     <div class="card">
         <label>Ваше имя:</label>
-        <input type="text" id="waiterName" placeholder="Введите имя для личной смены" onchange="saveName()">
+        <input type="text" id="waiterName" placeholder="Введите имя" onchange="saveName()">
     </div>
 
     <div class="card" id="dailyGameCard">
         <h2>🎯 Игра Дня</h2>
-        <div id="dailyGameContent">Загрузка условий игры дня...</div>
+        <div id="dailyGameContent">Загрузка условий...</div>
     </div>
 
     <div class="card">
@@ -74,32 +74,48 @@
 
 <script>
     const SHEET_ID = '113BWLabBaaDO9WfTmkfhLyjAmtL8XBnZQyIZ_Dkb1F0';
-    const MENU_URL = `https://opensheet.elk.sh/${SHEET_ID}/Лист1`;
+    // Прямой CSV экспорт Google Таблицы
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
     let menu = [];
     let selectedGameCategory = null;
-    let selectedSections = [];
-    let excludedItemNames = [];
 
-    // Загрузка меню из вашей Google Таблицы
+    // Функция разбора CSV формата
+    function parseCSV(text) {
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+        
+        return lines.slice(1).map(line => {
+            const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
+            let obj = {};
+            headers.forEach((header, i) => {
+                obj[header] = values[i] || '';
+            });
+            return obj;
+        });
+    }
+
     async function loadMenu() {
         try {
-            const response = await fetch(MENU_URL);
-            const data = await response.json();
-            
+            const response = await fetch(CSV_URL);
+            const text = await response.text();
+            const data = parseCSV(text);
+
             menu = data.map(row => ({
                 name: row.name || 'Без названия',
                 category: (row.category || 'food').toLowerCase().trim(),
                 section: row.section || 'Прочее',
-                coeff: parseFloat(String(row.coeff || 1).replace(',', '.')),
+                coeff: parseFloat(String(row.coeff || 1).replace(',', '.')) || 1.0,
                 is_go: String(row.is_go).toUpperCase() === 'TRUE'
             }));
 
             renderMenu();
             renderDailyGameInfo();
         } catch (e) {
-            console.error('Ошибка загрузки Google Таблицы:', e);
-            document.getElementById('menuSelection').innerText = 'Ошибка загрузки данных из Google Таблицы.';
+            console.error('Ошибка:', e);
+            document.getElementById('menuSelection').innerText = 'Ошибка загрузки данных. Проверьте права доступа таблицы.';
         }
     }
 
@@ -107,7 +123,6 @@
         const container = document.getElementById('menuSelection');
         container.innerHTML = '';
 
-        // Группировка по разделам
         const sections = {};
         menu.forEach(item => {
             if (!sections[item.section]) sections[item.section] = [];
@@ -124,7 +139,7 @@
                             ${item.name} ${item.is_go ? '<span class="badge-go">GO</span>' : ''}
                             <br><small style="color:#666">Коэф: ${item.coeff}</small>
                         </div>
-                        <input type="number" min="0" value="0" id="item_qty_${itemIndex}" style="width:60px; margin:0;" data-name="${item.name}">
+                        <input type="number" min="0" value="0" id="item_qty_${itemIndex}" style="width:60px; margin:0;">
                     </div>
                 `;
                 itemIndex++;
@@ -132,7 +147,6 @@
         }
     }
 
-    // Логика конструктора Игры Дня
     function selectGameCategory(cat) {
         selectedGameCategory = cat;
         document.getElementById('btnFood').style.background = cat === 'food' ? '#007aff' : '#e5e5ea';
@@ -142,7 +156,6 @@
 
         document.getElementById('categoryConfig').style.display = 'block';
 
-        // Собираем уникальные разделы для выбранной категории
         const availableSections = [...new Set(menu.filter(i => i.category === cat).map(i => i.section))];
         const secContainer = document.getElementById('sectionsCheckboxes');
         secContainer.innerHTML = '';
@@ -181,7 +194,7 @@
         const target = parseInt(document.getElementById('gameTarget').value);
 
         if (checkedSections.length === 0 || isNaN(target)) {
-            return alert('Выберите хотя бы один раздел и укажите числовую цель!');
+            return alert('Выберите хотя бы один раздел и укажите цель!');
         }
 
         const gameConfig = {
@@ -192,7 +205,7 @@
         };
 
         localStorage.setItem('dailyGameConfig', JSON.stringify(gameConfig));
-        alert('Гра дня успешно запущена!');
+        alert('Игра дня запущена!');
         renderDailyGameInfo();
     }
 
@@ -201,7 +214,7 @@
         const container = document.getElementById('dailyGameContent');
 
         if (!config) {
-            container.innerHTML = '<p style="color:#666;">Игра дня еще не настроена управляющим.</p>';
+            container.innerHTML = '<p style="color:#666;">Игра дня еще не настроена.</p>';
             return;
         }
 
@@ -212,7 +225,7 @@
             <p><b>Разделы:</b> ${config.sections.join(', ')}</p>
             ${config.excludedItems.length > 0 ? `<p style="font-size:12px; color:#d9534f;"><b>Исключены:</b> ${config.excludedItems.join(', ')}</p>` : ''}
             <p><b>Цель дня:</b> Продать ${config.target} шт.</p>
-            <p><b>Ваш прогресс:</b> <b style="font-size:18px; color:#007aff;">${myProgress} / ${config.target} шт.</b> ${myProgress >= config.target ? '✅ (Цель достигнута!)' : ''}</p>
+            <p><b>Ваш прогресс:</b> <b style="font-size:18px; color:#007aff;">${myProgress} / ${config.target} шт.</b> ${myProgress >= config.target ? '✅' : ''}</p>
         `;
     }
 
@@ -220,7 +233,7 @@
         const checkSum = parseFloat(document.getElementById('checkSum').value);
         const guests = parseInt(document.getElementById('guestCount').value);
 
-        if (isNaN(checkSum) || isNaN(guests) || guests <= 0) return alert('Введите корректную сумму чека и количество гостей');
+        if (isNaN(checkSum) || isNaN(guests) || guests <= 0) return alert('Введите корректные данные');
 
         let foodCoeffSum = 0;
         let drinkCoeffSum = 0;
@@ -228,8 +241,10 @@
 
         const config = JSON.parse(localStorage.getItem('dailyGameConfig'));
 
-        menu.forEach((item, index) => {
-            const input = document.getElementById(`item_qty_${index}`);
+        let itemIndex = 0;
+        menu.forEach(item => {
+            const input = document.getElementById(`item_qty_${itemIndex}`);
+            itemIndex++;
             if (!input) return;
             const qty = parseInt(input.value) || 0;
 
@@ -237,7 +252,6 @@
                 if (item.category === 'food') foodCoeffSum += item.coeff * qty;
                 if (item.category === 'drink') drinkCoeffSum += item.coeff * qty;
 
-                // Подсчет позиций для Игры Дня
                 if (config && config.sections.includes(item.section) && !config.excludedItems.includes(item.name)) {
                     gameItemsSoldThisTable += qty;
                 }
@@ -249,7 +263,6 @@
         const isFormulaMet = (foodPerGuest >= 3.3) && (drinkPerGuest >= 2.4);
         const earning = checkSum * (isFormulaMet ? 0.02 : 0.002);
 
-        // Обновление прогресса Игры Дня
         if (gameItemsSoldThisTable > 0) {
             let currentProgress = parseInt(localStorage.getItem('myDailyGameProgress') || 0);
             currentProgress += gameItemsSoldThisTable;
