@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор и Конкурсы</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 15px; background: #f2f2f7; color: #000; margin: 0; }
+        .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h2, h3 { margin-top: 0; }
+        label { display: block; margin: 8px 0 4px; font-weight: 600; font-size: 14px; }
+        input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        button { background: #007aff; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-sec { background: #e5e5ea; color: #000; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .btn-group button { flex: 1; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .badge-go { background: #ff9500; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .section-header { font-weight: bold; background: #f2f2f7; padding: 6px 10px; margin-top: 10px; border-radius: 6px; }
+        .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 8px; border-radius: 8px; }
+        .checkbox-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+        .checkbox-item input { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <label>Ваше имя:</label>
+        <input type="text" id="waiterName" placeholder="Введите имя для личной смены" onchange="saveName()">
+    </div>
+
+    <div class="card" id="dailyGameCard">
+        <h2>🎯 Игра Дня</h2>
+        <div id="dailyGameContent">Загрузка условий игры дня...</div>
+    </div>
+
+    <div class="card">
+        <h2>Расчет стола</h2>
+        <label>Сумма чека (₽)</label>
+        <input type="number" id="checkSum" placeholder="Например, 5000">
+
+        <label>Количество гостей</label>
+        <input type="number" id="guestCount" value="1" min="1">
+
+        <label>Позиции стола</label>
+        <div id="menuSelection">Загрузка меню из Google Таблицы...</div>
+
+        <button onclick="calculateTable()">Рассчитать стол</button>
+        <div id="tableResult"></div>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ Панель Управляющего: Создать Игру Дня</h2>
+        
+        <label>1. Выберите главную категорию:</label>
+        <div class="btn-group">
+            <button class="btn-sec" id="btnFood" onclick="selectGameCategory('food')">Блюда</button>
+            <button class="btn-sec" id="btnDrink" onclick="selectGameCategory('drink')">Напитки</button>
+        </div>
+
+        <div id="categoryConfig" style="display:none;">
+            <label>2. Выберите разделы галочками:</label>
+            <div id="sectionsCheckboxes" class="checkbox-list"></div>
+
+            <label style="margin-top:15px;">3. Исключить конкретные позиции (опционально):</label>
+            <div id="itemsExcludeCheckboxes" class="checkbox-list"></div>
+
+            <label style="margin-top:15px;">4. Укажите цель (продать штук):</label>
+            <input type="number" id="gameTarget" placeholder="Например, 15">
+
+            <button onclick="saveDailyGame()" style="background:#34c759;">Запустить игру дня</button>
+        </div>
+    </div>
+
+<script>
+    const SHEET_ID = '113BWLabBaaDO9WfTmkfhLyjAmtL8XBnZQyIZ_Dkb1F0';
+    const MENU_URL = `https://opensheet.elk.sh/${SHEET_ID}/Лист1`;
+
+    let menu = [];
+    let selectedGameCategory = null;
+    let selectedSections = [];
+    let excludedItemNames = [];
+
+    // Загрузка меню из вашей Google Таблицы
+    async function loadMenu() {
+        try {
+            const response = await fetch(MENU_URL);
+            const data = await response.json();
+            
+            menu = data.map(row => ({
+                name: row.name || 'Без названия',
+                category: (row.category || 'food').toLowerCase().trim(),
+                section: row.section || 'Прочее',
+                coeff: parseFloat(String(row.coeff || 1).replace(',', '.')),
+                is_go: String(row.is_go).toUpperCase() === 'TRUE'
+            }));
+
+            renderMenu();
+            renderDailyGameInfo();
+        } catch (e) {
+            console.error('Ошибка загрузки Google Таблицы:', e);
+            document.getElementById('menuSelection').innerText = 'Ошибка загрузки данных из Google Таблицы.';
+        }
+    }
+
+    function renderMenu() {
+        const container = document.getElementById('menuSelection');
+        container.innerHTML = '';
+
+        // Группировка по разделам
+        const sections = {};
+        menu.forEach(item => {
+            if (!sections[item.section]) sections[item.section] = [];
+            sections[item.section].push(item);
+        });
+
+        let itemIndex = 0;
+        for (const sec in sections) {
+            container.innerHTML += `<div class="section-header">${sec}</div>`;
+            sections[sec].forEach(item => {
+                container.innerHTML += `
+                    <div class="item-row">
+                        <div>
+                            ${item.name} ${item.is_go ? '<span class="badge-go">GO</span>' : ''}
+                            <br><small style="color:#666">Коэф: ${item.coeff}</small>
+                        </div>
+                        <input type="number" min="0" value="0" id="item_qty_${itemIndex}" style="width:60px; margin:0;" data-name="${item.name}">
+                    </div>
+                `;
+                itemIndex++;
+            });
+        }
+    }
+
+    // Логика конструктора Игры Дня
+    function selectGameCategory(cat) {
+        selectedGameCategory = cat;
+        document.getElementById('btnFood').style.background = cat === 'food' ? '#007aff' : '#e5e5ea';
+        document.getElementById('btnFood').style.color = cat === 'food' ? '#fff' : '#000';
+        document.getElementById('btnDrink').style.background = cat === 'drink' ? '#007aff' : '#e5e5ea';
+        document.getElementById('btnDrink').style.color = cat === 'drink' ? '#fff' : '#000';
+
+        document.getElementById('categoryConfig').style.display = 'block';
+
+        // Собираем уникальные разделы для выбранной категории
+        const availableSections = [...new Set(menu.filter(i => i.category === cat).map(i => i.section))];
+        const secContainer = document.getElementById('sectionsCheckboxes');
+        secContainer.innerHTML = '';
+
+        availableSections.forEach(sec => {
+            secContainer.innerHTML += `
+                <div class="checkbox-item">
+                    <label>${sec}</label>
+                    <input type="checkbox" value="${sec}" onchange="updateExcludeList()">
+                </div>
+            `;
+        });
+
+        updateExcludeList();
+    }
+
+    function updateExcludeList() {
+        const checkedSections = Array.from(document.querySelectorAll('#sectionsCheckboxes input:checked')).map(cb => cb.value);
+        const excludeContainer = document.getElementById('itemsExcludeCheckboxes');
+        excludeContainer.innerHTML = '';
+
+        const itemsToExclude = menu.filter(i => checkedSections.includes(i.section));
+        itemsToExclude.forEach(item => {
+            excludeContainer.innerHTML += `
+                <div class="checkbox-item">
+                    <label>${item.name} (${item.section})</label>
+                    <input type="checkbox" class="exclude-cb" value="${item.name}">
+                </div>
+            `;
+        });
+    }
+
+    function saveDailyGame() {
+        const checkedSections = Array.from(document.querySelectorAll('#sectionsCheckboxes input:checked')).map(cb => cb.value);
+        const excludedItems = Array.from(document.querySelectorAll('.exclude-cb:checked')).map(cb => cb.value);
+        const target = parseInt(document.getElementById('gameTarget').value);
+
+        if (checkedSections.length === 0 || isNaN(target)) {
+            return alert('Выберите хотя бы один раздел и укажите числовую цель!');
+        }
+
+        const gameConfig = {
+            category: selectedGameCategory,
+            sections: checkedSections,
+            excludedItems: excludedItems,
+            target: target
+        };
+
+        localStorage.setItem('dailyGameConfig', JSON.stringify(gameConfig));
+        alert('Гра дня успешно запущена!');
+        renderDailyGameInfo();
+    }
+
+    function renderDailyGameInfo() {
+        const config = JSON.parse(localStorage.getItem('dailyGameConfig'));
+        const container = document.getElementById('dailyGameContent');
+
+        if (!config) {
+            container.innerHTML = '<p style="color:#666;">Игра дня еще не настроена управляющим.</p>';
+            return;
+        }
+
+        const myProgress = localStorage.getItem('myDailyGameProgress') || 0;
+
+        container.innerHTML = `
+            <p><b>Категория:</b> ${config.category === 'food' ? 'Блюда' : 'Напитки'}</p>
+            <p><b>Разделы:</b> ${config.sections.join(', ')}</p>
+            ${config.excludedItems.length > 0 ? `<p style="font-size:12px; color:#d9534f;"><b>Исключены:</b> ${config.excludedItems.join(', ')}</p>` : ''}
+            <p><b>Цель дня:</b> Продать ${config.target} шт.</p>
+            <p><b>Ваш прогресс:</b> <b style="font-size:18px; color:#007aff;">${myProgress} / ${config.target} шт.</b> ${myProgress >= config.target ? '✅ (Цель достигнута!)' : ''}</p>
+        `;
+    }
+
+    function calculateTable() {
+        const checkSum = parseFloat(document.getElementById('checkSum').value);
+        const guests = parseInt(document.getElementById('guestCount').value);
+
+        if (isNaN(checkSum) || isNaN(guests) || guests <= 0) return alert('Введите корректную сумму чека и количество гостей');
+
+        let foodCoeffSum = 0;
+        let drinkCoeffSum = 0;
+        let gameItemsSoldThisTable = 0;
+
+        const config = JSON.parse(localStorage.getItem('dailyGameConfig'));
+
+        menu.forEach((item, index) => {
+            const input = document.getElementById(`item_qty_${index}`);
+            if (!input) return;
+            const qty = parseInt(input.value) || 0;
+
+            if (qty > 0) {
+                if (item.category === 'food') foodCoeffSum += item.coeff * qty;
+                if (item.category === 'drink') drinkCoeffSum += item.coeff * qty;
+
+                // Подсчет позиций для Игры Дня
+                if (config && config.sections.includes(item.section) && !config.excludedItems.includes(item.name)) {
+                    gameItemsSoldThisTable += qty;
+                }
+            }
+        });
+
+        const foodPerGuest = foodCoeffSum / guests;
+        const drinkPerGuest = drinkCoeffSum / guests;
+        const isFormulaMet = (foodPerGuest >= 3.3) && (drinkPerGuest >= 2.4);
+        const earning = checkSum * (isFormulaMet ? 0.02 : 0.002);
+
+        // Обновление прогресса Игры Дня
+        if (gameItemsSoldThisTable > 0) {
+            let currentProgress = parseInt(localStorage.getItem('myDailyGameProgress') || 0);
+            currentProgress += gameItemsSoldThisTable;
+            localStorage.setItem('myDailyGameProgress', currentProgress);
+            renderDailyGameInfo();
+        }
+
+        document.getElementById('tableResult').innerHTML = `
+            <hr>
+            <p><b>Блюда/гость:</b> ${foodPerGuest.toFixed(2)} / 3.3 ${foodPerGuest >= 3.3 ? '✅' : '❌'}</p>
+            <p><b>Напитки/гость:</b> ${drinkPerGuest.toFixed(2)} / 2.4 ${drinkPerGuest >= 2.4 ? '✅' : '❌'}</p>
+            <p><b>Формула:</b> ${isFormulaMet ? '<span style="color:green;font-weight:bold;">ВЫПОЛНЕНА (2%)</span>' : '<span style="color:red;font-weight:bold;">НЕ ВЫПОЛНЕНА (0.2%)</span>'}</p>
+            <p><b>Заработок со стола:</b> ${earning.toFixed(2)} ₽</p>
+        `;
+    }
+
+    function saveName() {
+        localStorage.setItem('waiterName', document.getElementById('waiterName').value);
+    }
+
+    document.getElementById('waiterName').value = localStorage.getItem('waiterName') || '';
+    loadMenu();
+</script>
+</body>
+</html>
